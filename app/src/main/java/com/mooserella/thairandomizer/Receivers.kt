@@ -6,7 +6,12 @@ import android.content.Intent
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        Letters.byId(intent.getStringExtra("letter"))?.let { Notifier.show(context, it) }
+        val sv = Swedish.byId(intent.getStringExtra("sv"))
+        if (sv != null) {
+            Notifier.showSwedish(context, sv)
+        } else {
+            Letters.byId(intent.getStringExtra("letter"))?.let { Notifier.showThai(context, it) }
+        }
         Scheduler.rescheduleAll(context)
     }
 }

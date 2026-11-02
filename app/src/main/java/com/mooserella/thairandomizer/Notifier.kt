@@ -7,21 +7,25 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 
+/** Notifications only show the letter itself, so you have to recall the answer. */
 object Notifier {
     private const val CHANNEL = "letters"
 
-    fun show(ctx: Context, letter: Letter) {
+    fun showThai(ctx: Context, letter: Letter) = post(ctx, letter.glyph) { putExtra("letter", letter.id) }
+
+    fun showSwedish(ctx: Context, letter: SvLetter) = post(ctx, letter.glyph) { putExtra("sv", letter.id) }
+
+    private fun post(ctx: Context, title: String, extras: Intent.() -> Unit) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Thai letters", NotificationManager.IMPORTANCE_HIGH)
+                NotificationChannel(CHANNEL, "Letters", NotificationManager.IMPORTANCE_HIGH)
             )
         }
 
         val open = Intent(ctx, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            .putExtra("letter", letter.id)
-            .putExtra("autoplay", true)
+            .apply(extras)
         val id = (System.currentTimeMillis() / 1000).toInt()
         val tap = PendingIntent.getActivity(
             ctx, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -29,9 +33,7 @@ object Notifier {
 
         val n = Notification.Builder(ctx, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
-            .setContentTitle(letter.title)
-            .setContentText(letter.detail.replace("\n", " · "))
-            .setStyle(Notification.BigTextStyle().bigText(letter.detail))
+            .setContentTitle(title)
             .setContentIntent(tap)
             .setAutoCancel(true)
             .build()
