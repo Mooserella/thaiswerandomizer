@@ -38,8 +38,10 @@ object Scheduler {
         val sv = Prefs.mode(ctx) == "sv"
         val thaiPool = Letters.ALL.filter { it.id in Prefs.pool(ctx) }
         val svPool = Swedish.ALL.filter { it.id in Prefs.svPool(ctx) }
-        val size = if (sv) svPool.size else thaiPool.size
-        if (size == 0) return null
+        if ((if (sv) svPool.size else thaiPool.size) == 0) return null
+        val level = Prefs.dimLevel(ctx)
+        val dimThai = Prefs.dim(ctx)
+        val dimSv = Prefs.svDim(ctx)
 
         val start = Prefs.startHour(ctx)
         val end = Prefs.endHour(ctx)
@@ -59,13 +61,15 @@ object Scheduler {
             val rnd = Random(seed)
             for (i in 0 until per) {
                 val minute = start * 60 + i * segment + rnd.nextInt(segment)
-                val pick = rnd.nextInt(size)
+                // Always draw, even for times that have passed, so the rest of the day stays the same.
+                val svLetter = if (sv) Weighted.pick(svPool, { it.id in dimSv }, level, rnd) else null
+                val thLetter = if (sv) null else Weighted.pick(thaiPool, { it.id in dimThai }, level, rnd)
                 val at = date.atStartOfDay(zone).plusMinutes(minute.toLong()).toInstant().toEpochMilli()
                 if (at <= now) continue
 
-                val label = if (sv) svPool[pick].glyph else thaiPool[pick].glyph
+                val label = svLetter?.glyph ?: thLetter!!.glyph
                 val intent = Intent(ctx, AlarmReceiver::class.java)
-                if (sv) intent.putExtra("sv", svPool[pick].id) else intent.putExtra("letter", thaiPool[pick].id)
+                if (svLetter != null) intent.putExtra("sv", svLetter.id) else intent.putExtra("letter", thLetter!!.id)
                 val pi = PendingIntent.getBroadcast(
                     ctx, d * MAX_PER_DAY + i, intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

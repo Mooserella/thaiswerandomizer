@@ -1,4 +1,4 @@
-# Letter Randomizer
+# Camla
 
 Android app that sends notifications with a random letter at random times, so you can try to recall its name before you open the app.
 

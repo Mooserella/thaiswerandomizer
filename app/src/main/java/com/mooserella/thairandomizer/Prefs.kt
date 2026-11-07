@@ -12,6 +12,17 @@ object Prefs {
     fun mode(c: Context) = sp(c).getString("mode", "th") ?: "th"
     fun setMode(c: Context, v: String) = sp(c).edit().putString("mode", v).apply()
 
+    /** Letters in the pool that are dimmed, so they come up less often. Always a subset of the pool. */
+    fun dim(c: Context): Set<String> = HashSet(sp(c).getStringSet("dim", emptySet<String>()) ?: emptySet<String>())
+    fun setDim(c: Context, v: Set<String>) = sp(c).edit().putStringSet("dim", HashSet(v)).apply()
+
+    fun svDim(c: Context): Set<String> = HashSet(sp(c).getStringSet("svDim", emptySet<String>()) ?: emptySet<String>())
+    fun setSvDim(c: Context, v: Set<String>) = sp(c).edit().putStringSet("svDim", HashSet(v)).apply()
+
+    /** 0 = dimmed letters almost never come up, 100 = almost as often as the others. */
+    fun dimLevel(c: Context) = sp(c).getInt("dimLevel", 50)
+    fun setDimLevel(c: Context, v: Int) = sp(c).edit().putInt("dimLevel", v).apply()
+
     fun enabled(c: Context) = sp(c).getBoolean("enabled", true)
     fun setEnabled(c: Context, v: Boolean) = sp(c).edit().putBoolean("enabled", v).apply()
 

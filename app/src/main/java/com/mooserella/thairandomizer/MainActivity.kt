@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.media.MediaPlayer
@@ -18,12 +19,14 @@ import android.widget.Button
 import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.random.Random
 
 class MainActivity : Activity() {
     private val bg = Color.parseColor("#17151A")
@@ -32,10 +35,14 @@ class MainActivity : Activity() {
     private val muted = Color.parseColor("#A39B91")
     private val accent = Color.parseColor("#E86B8F")
     private val off = Color.parseColor("#2C2830")
+    private val dimBg = Color.parseColor("#7B3D55")
+    private val dimFg = Color.parseColor("#E9C9D3")
 
     private var player: MediaPlayer? = null
     private val thaiPool = HashSet<String>()
     private val svPool = HashSet<String>()
+    private val thaiDim = HashSet<String>() // dimmed letters, always inside the pool
+    private val svDim = HashSet<String>()
 
     // What the card shows right now: a Thai letter ("th") or a Swedish letter ("sv").
     private var kind = "th"
@@ -57,6 +64,7 @@ class MainActivity : Activity() {
 
     private val mode get() = Prefs.mode(this)
     private fun activePool() = if (mode == "sv") svPool else thaiPool
+    private fun activeDim() = if (mode == "sv") svDim else thaiDim
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
@@ -80,6 +88,8 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         thaiPool.addAll(Prefs.pool(this))
         svPool.addAll(Prefs.svPool(this))
+        thaiDim.addAll(Prefs.dim(this))
+        svDim.addAll(Prefs.svDim(this))
 
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -97,7 +107,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        top.addView(text("Letter Randomizer", 13f, muted, true), LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(text("Camla", 13f, muted, true), LinearLayout.LayoutParams(0, -2, 1f))
         flagSv = text("🇸🇪", 30f).apply {
             setPadding(dp(10), dp(4), dp(10), dp(4))
             setOnClickListener { setMode("sv") }
@@ -141,7 +151,7 @@ class MainActivity : Activity() {
         // Pool
         poolTitle = text("", 13f, muted, true)
         col.addView(poolTitle, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(24) })
-        col.addView(text("Tap to add or remove from the pool. Long-press to see the answer.", 13f, muted))
+        col.addView(text("Tap once to add a letter, again to dim it (it comes up less often), a third time to remove it. Long-press to see the answer.", 13f, muted))
 
         grid = GridLayout(this).apply { columnCount = 6 }
         col.addView(grid, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
@@ -150,6 +160,7 @@ class MainActivity : Activity() {
         bulk.addView(button("First 5") {
             val p = activePool()
             p.clear()
+            activeDim().clear()
             p.addAll(if (mode == "sv") Swedish.ALL.take(5).map { it.id } else Letters.ALL.take(5).map { it.id })
             applyAndSave()
         })
@@ -157,11 +168,12 @@ class MainActivity : Activity() {
         bulk.addView(button("All") {
             val p = activePool()
             p.clear()
+            activeDim().clear()
             p.addAll(if (mode == "sv") Swedish.ALL.map { it.id } else Letters.ALL.map { it.id })
             applyAndSave()
         })
         bulk.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
-        bulk.addView(button("None") { activePool().clear(); applyAndSave() })
+        bulk.addView(button("None") { activePool().clear(); activeDim().clear(); applyAndSave() })
         col.addView(bulk, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
 
         // Notifications
@@ -189,6 +201,30 @@ class MainActivity : Activity() {
         col.addView(spinner("Per day", (1..20).map { "$it" }, Prefs.perDay(this) - 1) {
             Prefs.setPerDay(this, it + 1)
         })
+
+        col.addView(text("Dimmed letters", 15f), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+        val seek = SeekBar(this).apply {
+            max = 100
+            progress = Prefs.dimLevel(this@MainActivity)
+            progressTintList = ColorStateList.valueOf(accent)
+            thumbTintList = ColorStateList.valueOf(accent)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(sb: SeekBar?, value: Int, fromUser: Boolean) {
+                    if (fromUser) Prefs.setDimLevel(this@MainActivity, value)
+                }
+
+                override fun onStartTrackingTouch(sb: SeekBar?) {}
+
+                override fun onStopTrackingTouch(sb: SeekBar?) {
+                    applyAndSave()
+                }
+            })
+        }
+        col.addView(seek, LinearLayout.LayoutParams(-1, -2))
+        val ends = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        ends.addView(text("Almost never", 12f, muted), LinearLayout.LayoutParams(0, -2, 1f))
+        ends.addView(text("Almost as often", 12f, muted))
+        col.addView(ends, LinearLayout.LayoutParams(-1, -2))
 
         statusView = text("", 14f, muted)
         col.addView(statusView, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
@@ -288,7 +324,12 @@ class MainActivity : Activity() {
             setPadding(0, 0, 0, 0)
             setOnClickListener {
                 val p = activePool()
-                if (!p.add(key)) p.remove(key)
+                val d = activeDim()
+                when {
+                    key !in p -> p.add(key)       // off -> on
+                    key !in d -> d.add(key)       // on -> dimmed
+                    else -> { d.remove(key); p.remove(key) } // dimmed -> off
+                }
                 applyAndSave()
             }
             setOnLongClickListener { onHold(); true }
@@ -324,11 +365,11 @@ class MainActivity : Activity() {
         if (mode == "sv") {
             val c = Swedish.ALL.filter { it.id in svPool }
             if (c.isEmpty()) return
-            kind = "sv"; curSv = c.random()
+            kind = "sv"; curSv = Weighted.pick(c, { it.id in svDim }, Prefs.dimLevel(this), Random)
         } else {
             val c = Letters.ALL.filter { it.id in thaiPool }
             if (c.isEmpty()) return
-            kind = "th"; curThai = c.random()
+            kind = "th"; curThai = Weighted.pick(c, { it.id in thaiDim }, Prefs.dimLevel(this), Random)
         }
         revealed = false
         renderCard()
@@ -378,16 +419,23 @@ class MainActivity : Activity() {
     }
 
     private fun applyAndSave() {
+        thaiDim.retainAll(thaiPool)
+        svDim.retainAll(svPool)
         Prefs.setPool(this, thaiPool)
         Prefs.setSvPool(this, svPool)
+        Prefs.setDim(this, thaiDim)
+        Prefs.setSvDim(this, svDim)
         val pool = activePool()
+        val dim = activeDim()
         for ((key, b) in cells) {
-            val on = key in pool
-            b.setBackgroundColor(if (on) accent else off)
-            b.setTextColor(if (on) Color.WHITE else muted)
+            when {
+                key !in pool -> { b.setBackgroundColor(off); b.setTextColor(muted) }
+                key in dim -> { b.setBackgroundColor(dimBg); b.setTextColor(dimFg) }
+                else -> { b.setBackgroundColor(accent); b.setTextColor(Color.WHITE) }
+            }
         }
         val total = if (mode == "sv") Swedish.ALL.size else Letters.ALL.size
-        poolTitle.text = "POOL (${pool.size} of $total)"
+        poolTitle.text = "POOL (${pool.size} of $total" + (if (dim.isNotEmpty()) ", ${dim.size} dimmed" else "") + ")"
         val next = Scheduler.rescheduleAll(this)
         statusView.text = when {
             !Prefs.enabled(this) -> "Notifications are off."
