@@ -63,6 +63,21 @@ class MainActivity : Activity() {
     private val cells = LinkedHashMap<String, Button>()
 
     private val mode get() = Prefs.mode(this)
+
+    // The Thai letters are for Swedish speakers (Swedish text); the Swedish letters are for Thai speakers (Thai text).
+    private fun ui(swedish: String, thai: String) = if (mode == "sv") thai else swedish
+
+    private val translations = ArrayList<Triple<TextView, String, String>>()
+
+    private fun <V : TextView> V.tr(swedish: String, thai: String): V {
+        translations.add(Triple(this, swedish, thai))
+        text = ui(swedish, thai)
+        return this
+    }
+
+    private fun applyLanguage() {
+        for ((v, sw, th) in translations) v.text = ui(sw, th)
+    }
     private fun activePool() = if (mode == "sv") svPool else thaiPool
     private fun activeDim() = if (mode == "sv") svDim else thaiDim
 
@@ -151,7 +166,10 @@ class MainActivity : Activity() {
         // Pool
         poolTitle = text("", 13f, muted, true)
         col.addView(poolTitle, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(24) })
-        col.addView(text("Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Håll in för att se svaret.", 13f, muted))
+        col.addView(text("", 13f, muted).tr(
+            "Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Håll in för att se svaret.",
+            "แตะครั้งเดียวเพื่อเพิ่มตัวอักษร แตะอีกครั้งเพื่อลดความสำคัญ (จะออกน้อยลง) แตะครั้งที่สามเพื่อลบออก กดค้างเพื่อดูคำตอบ"
+        ))
 
         grid = GridLayout(this).apply { columnCount = 6 }
         col.addView(grid, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
@@ -163,7 +181,7 @@ class MainActivity : Activity() {
             activeDim().clear()
             p.addAll(if (mode == "sv") Swedish.ALL.take(5).map { it.id } else Letters.ALL.take(5).map { it.id })
             applyAndSave()
-        })
+        }.tr("Första 5", "5 ตัวแรก"))
         bulk.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
         bulk.addView(button("Alla") {
             val p = activePool()
@@ -171,18 +189,17 @@ class MainActivity : Activity() {
             activeDim().clear()
             p.addAll(if (mode == "sv") Swedish.ALL.map { it.id } else Letters.ALL.map { it.id })
             applyAndSave()
-        })
+        }.tr("Alla", "ทั้งหมด"))
         bulk.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
-        bulk.addView(button("Inga") { activePool().clear(); activeDim().clear(); applyAndSave() })
+        bulk.addView(button("Inga") { activePool().clear(); activeDim().clear(); applyAndSave() }.tr("Inga", "ไม่เลือก"))
         col.addView(bulk, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
 
         // Notifications
         col.addView(
-            text("NOTISER", 13f, muted, true),
+            text("NOTISER", 13f, muted, true).tr("NOTISER", "การแจ้งเตือน"),
             LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(24) }
         )
         val sw = Switch(this).apply {
-            text = "Skicka notiser"
             setTextColor(fg)
             isChecked = Prefs.enabled(this@MainActivity)
             setOnCheckedChangeListener { _, on ->
@@ -190,19 +207,20 @@ class MainActivity : Activity() {
                 applyAndSave()
             }
         }
+        sw.tr("Skicka notiser", "ส่งการแจ้งเตือน")
         col.addView(sw, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
-        col.addView(spinner("Från", (0..23).map { "%02d:00".format(it) }, Prefs.startHour(this)) {
+        col.addView(spinner("Från", "จาก", (0..23).map { "%02d:00".format(it) }, Prefs.startHour(this)) {
             Prefs.setStartHour(this, it)
         })
-        col.addView(spinner("Till", (1..24).map { "%02d:00".format(it) }, Prefs.endHour(this) - 1) {
+        col.addView(spinner("Till", "ถึง", (1..24).map { "%02d:00".format(it) }, Prefs.endHour(this) - 1) {
             Prefs.setEndHour(this, it + 1)
         })
-        col.addView(spinner("Per dag", (1..20).map { "$it" }, Prefs.perDay(this) - 1) {
+        col.addView(spinner("Per dag", "ต่อวัน", (1..20).map { "$it" }, Prefs.perDay(this) - 1) {
             Prefs.setPerDay(this, it + 1)
         })
 
-        col.addView(text("Dämpade bokstäver", 15f), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+        col.addView(text("Dämpade bokstäver", 15f).tr("Dämpade bokstäver", "ตัวอักษรที่ลดความสำคัญ"), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
         val seek = SeekBar(this).apply {
             max = 100
             progress = Prefs.dimLevel(this@MainActivity)
@@ -222,22 +240,22 @@ class MainActivity : Activity() {
         }
         col.addView(seek, LinearLayout.LayoutParams(-1, -2))
         val ends = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        ends.addView(text("Nästan aldrig", 12f, muted), LinearLayout.LayoutParams(0, -2, 1f))
-        ends.addView(text("Nästan lika ofta", 12f, muted))
+        ends.addView(text("Nästan aldrig", 12f, muted).tr("Nästan aldrig", "แทบไม่ออกเลย"), LinearLayout.LayoutParams(0, -2, 1f))
+        ends.addView(text("Nästan lika ofta", 12f, muted).tr("Nästan lika ofta", "ออกเกือบเท่ากัน"))
         col.addView(ends, LinearLayout.LayoutParams(-1, -2))
 
         statusView = text("", 14f, muted)
         col.addView(statusView, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
 
         val acts = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        acts.addView(button("Testnotis") { sendTest() })
+        acts.addView(button("Testnotis") { sendTest() }.tr("Testnotis", "ทดสอบการแจ้งเตือน"))
         acts.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
         acts.addView(button("Batteriinställningar") {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-        })
+        }.tr("Batteriinställningar", "ตั้งค่าแบตเตอรี่"))
         col.addView(acts, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
         col.addView(
-            text("Om notiserna slutar komma: ställ in batteriet på Obegränsat för den här appen.", 12f, muted),
+            text("", 12f, muted).tr("Om notiserna slutar komma: ställ in batteriet på Obegränsat för den här appen.", "หากการแจ้งเตือนหยุดมา ให้ตั้งค่าแบตเตอรี่ของแอปนี้เป็น \"ไม่จำกัด\""),
             LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) }
         )
 
@@ -256,12 +274,12 @@ class MainActivity : Activity() {
         applyAndSave()
     }
 
-    private fun spinner(label: String, items: List<String>, selected: Int, onPick: (Int) -> Unit): View {
+    private fun spinner(label: String, labelTh: String, items: List<String>, selected: Int, onPick: (Int) -> Unit): View {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        box.addView(text(label, 15f), LinearLayout.LayoutParams(dp(90), -2))
+        box.addView(text(label, 15f).tr(label, labelTh), LinearLayout.LayoutParams(dp(90), -2))
         val sp = Spinner(this).apply {
             adapter = object : ArrayAdapter<String>(
                 this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items
@@ -283,9 +301,11 @@ class MainActivity : Activity() {
 
     private fun setMode(m: String) {
         Prefs.setMode(this, m)
+        applyLanguage()
         updateFlags()
         buildGrid()
         next()
+        renderCard()
         applyAndSave()
     }
 
@@ -378,30 +398,30 @@ class MainActivity : Activity() {
     private fun renderCard() {
         revealBox.removeAllViews()
         promptView.text = if (kind == "sv") curSv.glyph else curThai.glyph
-        hintView.text = "Vad heter bokstaven?"
+        hintView.text = ui("Vad heter bokstaven?", "ตัวอักษรนี้ชื่ออะไร?")
         if (!revealed) {
             revealBox.visibility = View.GONE
-            mainBtn.text = "Visa svar"
+            mainBtn.text = ui("Visa svar", "ดูคำตอบ")
             return
         }
         revealBox.visibility = View.VISIBLE
-        mainBtn.text = "Nästa"
+        mainBtn.text = ui("Nästa", "ถัดไป")
 
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        row.addView(button("▶ Bokstav") { playCurrent(false) })
+        row.addView(button(ui("▶ Bokstav", "▶ ตัวอักษร")) { playCurrent(false) })
         row.addView(View(this), LinearLayout.LayoutParams(dp(12), 1))
-        row.addView(button("▶ Ord") { playCurrent(true) })
+        row.addView(button(ui("▶ Ord", "▶ คำ")) { playCurrent(true) })
 
         if (kind == "sv") {
-            revealBox.addView(text("${curSv.name}  (${curSv.kind})", 20f, fg, true).apply { gravity = Gravity.CENTER })
-            revealBox.addView(text(curSv.word, 15f, muted).apply { gravity = Gravity.CENTER })
+            revealBox.addView(text("${curSv.name}  (${if (curSv.kind == "vokal") "สระ" else "พยัญชนะ"})", 20f, fg, true).apply { gravity = Gravity.CENTER })
+            revealBox.addView(text("${curSv.word}  (${curSv.thai})", 15f, muted).apply { gravity = Gravity.CENTER })
         } else {
             revealBox.addView(text("${curThai.roman}  (${curThai.meaning})", 20f, fg, true).apply { gravity = Gravity.CENTER })
             revealBox.addView(
-                text("ljud: ${curThai.sound} · ${curThai.cls}\n${curThai.word}", 15f, muted)
+                text("${ui("ljud", "เสียง")}: ${curThai.sound} · ${curThai.cls}\n${curThai.word}", 15f, muted)
                     .apply { gravity = Gravity.CENTER }
             )
         }
@@ -435,14 +455,18 @@ class MainActivity : Activity() {
             }
         }
         val total = if (mode == "sv") Swedish.ALL.size else Letters.ALL.size
-        poolTitle.text = "URVAL (${pool.size} av $total" + (if (dim.isNotEmpty()) ", ${dim.size} dämpade" else "") + ")"
+        poolTitle.text = if (mode == "sv") {
+            "ตัวอักษรที่เลือก (${pool.size} จาก $total" + (if (dim.isNotEmpty()) ", ลดความสำคัญ ${dim.size}" else "") + ")"
+        } else {
+            "URVAL (${pool.size} av $total" + (if (dim.isNotEmpty()) ", ${dim.size} dämpade" else "") + ")"
+        }
         val next = Scheduler.rescheduleAll(this)
         statusView.text = when {
-            !Prefs.enabled(this) -> "Notiserna är avstängda."
-            Prefs.endHour(this) <= Prefs.startHour(this) -> "Sluttiden måste vara senare än starttiden."
-            pool.isEmpty() -> "Urvalet är tomt."
-            next == null -> "Inget planerat."
-            else -> "Nästa: " + SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(Date(next.first)) +
+            !Prefs.enabled(this) -> ui("Notiserna är avstängda.", "ปิดการแจ้งเตือนอยู่")
+            Prefs.endHour(this) <= Prefs.startHour(this) -> ui("Sluttiden måste vara senare än starttiden.", "เวลาสิ้นสุดต้องหลังเวลาเริ่มต้น")
+            pool.isEmpty() -> ui("Urvalet är tomt.", "ยังไม่ได้เลือกตัวอักษร")
+            next == null -> ui("Inget planerat.", "ยังไม่มีการแจ้งเตือนที่ตั้งไว้")
+            else -> ui("Nästa: ", "ครั้งต่อไป: ") + SimpleDateFormat("EEE HH:mm", if (mode == "sv") Locale("th", "TH") else Locale.getDefault()).format(Date(next.first)) +
                 "  ${next.second}"
         }
     }
