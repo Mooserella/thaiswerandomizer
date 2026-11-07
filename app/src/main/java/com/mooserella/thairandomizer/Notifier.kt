@@ -19,7 +19,7 @@ object Notifier {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Letters", NotificationManager.IMPORTANCE_HIGH)
+                NotificationChannel(CHANNEL, "Bokstäver", NotificationManager.IMPORTANCE_HIGH)
             )
         }
 

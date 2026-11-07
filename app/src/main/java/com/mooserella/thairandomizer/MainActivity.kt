@@ -133,7 +133,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
         }
-        mainBtn = button("Reveal") {
+        mainBtn = button("Visa svar") {
             if (!revealed) {
                 revealed = true
                 renderCard()
@@ -151,13 +151,13 @@ class MainActivity : Activity() {
         // Pool
         poolTitle = text("", 13f, muted, true)
         col.addView(poolTitle, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(24) })
-        col.addView(text("Tap once to add a letter, again to dim it (it comes up less often), a third time to remove it. Long-press to see the answer.", 13f, muted))
+        col.addView(text("Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Håll in för att se svaret.", 13f, muted))
 
         grid = GridLayout(this).apply { columnCount = 6 }
         col.addView(grid, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val bulk = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        bulk.addView(button("First 5") {
+        bulk.addView(button("Första 5") {
             val p = activePool()
             p.clear()
             activeDim().clear()
@@ -165,7 +165,7 @@ class MainActivity : Activity() {
             applyAndSave()
         })
         bulk.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
-        bulk.addView(button("All") {
+        bulk.addView(button("Alla") {
             val p = activePool()
             p.clear()
             activeDim().clear()
@@ -173,16 +173,16 @@ class MainActivity : Activity() {
             applyAndSave()
         })
         bulk.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
-        bulk.addView(button("None") { activePool().clear(); activeDim().clear(); applyAndSave() })
+        bulk.addView(button("Inga") { activePool().clear(); activeDim().clear(); applyAndSave() })
         col.addView(bulk, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
 
         // Notifications
         col.addView(
-            text("NOTIFICATIONS", 13f, muted, true),
+            text("NOTISER", 13f, muted, true),
             LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(24) }
         )
         val sw = Switch(this).apply {
-            text = "Send notifications"
+            text = "Skicka notiser"
             setTextColor(fg)
             isChecked = Prefs.enabled(this@MainActivity)
             setOnCheckedChangeListener { _, on ->
@@ -192,17 +192,17 @@ class MainActivity : Activity() {
         }
         col.addView(sw, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
-        col.addView(spinner("From", (0..23).map { "%02d:00".format(it) }, Prefs.startHour(this)) {
+        col.addView(spinner("Från", (0..23).map { "%02d:00".format(it) }, Prefs.startHour(this)) {
             Prefs.setStartHour(this, it)
         })
-        col.addView(spinner("To", (1..24).map { "%02d:00".format(it) }, Prefs.endHour(this) - 1) {
+        col.addView(spinner("Till", (1..24).map { "%02d:00".format(it) }, Prefs.endHour(this) - 1) {
             Prefs.setEndHour(this, it + 1)
         })
-        col.addView(spinner("Per day", (1..20).map { "$it" }, Prefs.perDay(this) - 1) {
+        col.addView(spinner("Per dag", (1..20).map { "$it" }, Prefs.perDay(this) - 1) {
             Prefs.setPerDay(this, it + 1)
         })
 
-        col.addView(text("Dimmed letters", 15f), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+        col.addView(text("Dämpade bokstäver", 15f), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
         val seek = SeekBar(this).apply {
             max = 100
             progress = Prefs.dimLevel(this@MainActivity)
@@ -222,22 +222,22 @@ class MainActivity : Activity() {
         }
         col.addView(seek, LinearLayout.LayoutParams(-1, -2))
         val ends = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        ends.addView(text("Almost never", 12f, muted), LinearLayout.LayoutParams(0, -2, 1f))
-        ends.addView(text("Almost as often", 12f, muted))
+        ends.addView(text("Nästan aldrig", 12f, muted), LinearLayout.LayoutParams(0, -2, 1f))
+        ends.addView(text("Nästan lika ofta", 12f, muted))
         col.addView(ends, LinearLayout.LayoutParams(-1, -2))
 
         statusView = text("", 14f, muted)
         col.addView(statusView, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
 
         val acts = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        acts.addView(button("Test notification") { sendTest() })
+        acts.addView(button("Testnotis") { sendTest() })
         acts.addView(View(this), LinearLayout.LayoutParams(dp(8), 1))
-        acts.addView(button("Battery settings") {
+        acts.addView(button("Batteriinställningar") {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         })
         col.addView(acts, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
         col.addView(
-            text("If notifications stop arriving, set Battery to Unrestricted for this app.", 12f, muted),
+            text("Om notiserna slutar komma: ställ in batteriet på Obegränsat för den här appen.", 12f, muted),
             LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) }
         )
 
@@ -378,30 +378,30 @@ class MainActivity : Activity() {
     private fun renderCard() {
         revealBox.removeAllViews()
         promptView.text = if (kind == "sv") curSv.glyph else curThai.glyph
-        hintView.text = "What is this letter called?"
+        hintView.text = "Vad heter bokstaven?"
         if (!revealed) {
             revealBox.visibility = View.GONE
-            mainBtn.text = "Reveal"
+            mainBtn.text = "Visa svar"
             return
         }
         revealBox.visibility = View.VISIBLE
-        mainBtn.text = "Next"
+        mainBtn.text = "Nästa"
 
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        row.addView(button("▶ Letter") { playCurrent(false) })
+        row.addView(button("▶ Bokstav") { playCurrent(false) })
         row.addView(View(this), LinearLayout.LayoutParams(dp(12), 1))
-        row.addView(button("▶ Word") { playCurrent(true) })
+        row.addView(button("▶ Ord") { playCurrent(true) })
 
         if (kind == "sv") {
             revealBox.addView(text("${curSv.name}  (${curSv.kind})", 20f, fg, true).apply { gravity = Gravity.CENTER })
-            revealBox.addView(text("${curSv.word}  (${curSv.meaning})", 15f, muted).apply { gravity = Gravity.CENTER })
+            revealBox.addView(text(curSv.word, 15f, muted).apply { gravity = Gravity.CENTER })
         } else {
             revealBox.addView(text("${curThai.roman}  (${curThai.meaning})", 20f, fg, true).apply { gravity = Gravity.CENTER })
             revealBox.addView(
-                text("${curThai.sound} sound, ${curThai.cls} class\n${curThai.word}", 15f, muted)
+                text("ljud: ${curThai.sound} · ${curThai.cls}\n${curThai.word}", 15f, muted)
                     .apply { gravity = Gravity.CENTER }
             )
         }
@@ -435,14 +435,14 @@ class MainActivity : Activity() {
             }
         }
         val total = if (mode == "sv") Swedish.ALL.size else Letters.ALL.size
-        poolTitle.text = "POOL (${pool.size} of $total" + (if (dim.isNotEmpty()) ", ${dim.size} dimmed" else "") + ")"
+        poolTitle.text = "URVAL (${pool.size} av $total" + (if (dim.isNotEmpty()) ", ${dim.size} dämpade" else "") + ")"
         val next = Scheduler.rescheduleAll(this)
         statusView.text = when {
-            !Prefs.enabled(this) -> "Notifications are off."
-            Prefs.endHour(this) <= Prefs.startHour(this) -> "The end time must be later than the start time."
-            pool.isEmpty() -> "The pool is empty."
-            next == null -> "Nothing planned."
-            else -> "Next: " + SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(Date(next.first)) +
+            !Prefs.enabled(this) -> "Notiserna är avstängda."
+            Prefs.endHour(this) <= Prefs.startHour(this) -> "Sluttiden måste vara senare än starttiden."
+            pool.isEmpty() -> "Urvalet är tomt."
+            next == null -> "Inget planerat."
+            else -> "Nästa: " + SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(Date(next.first)) +
                 "  ${next.second}"
         }
     }

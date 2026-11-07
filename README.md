@@ -1,12 +1,12 @@
 # Camla
 
-Android app that sends notifications with a random letter at random times, so you can try to recall its name before you open the app.
+Android-app som skickar en slumpad bokstav som notis vid slumpade tider, så att du kan försöka komma på vad den heter innan du öppnar appen.
 
-- **Thai mode** (🇹🇭): Thai consonants, for learning the Thai alphabet.
-- **Swedish mode** (🇸🇪): the Swedish alphabet A–Ö, for learning Swedish letters.
+- **Thailändskt läge** (🇹🇭): thailändska konsonanter, för att lära sig det thailändska alfabetet.
+- **Svenskt läge** (🇸🇪): svenska alfabetet A–Ö, för att lära sig svenska bokstäver.
 
-Choose the language with the flags in the top right corner. Each language has its own pool of letters. In Settings you choose the time window and the number of notifications per day.
+Välj språk med flaggorna uppe till höger. Varje språk har ett eget urval av bokstäver. Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Reglaget "Dämpade bokstäver" styr hur ofta de dämpade bokstäverna kommer upp. I inställningarna väljer du tidsfönster och antal notiser per dag.
 
-The notification shows only the letter. Tap it to open the app, reveal the answer and hear it.
+Notisen visar bara bokstaven. Tryck på den för att öppna appen, visa svaret och höra det.
 
-Builds are made by GitHub Actions and published under Releases › Latest build.
+Bygget görs av GitHub Actions och publiceras under Releases › Latest build.
