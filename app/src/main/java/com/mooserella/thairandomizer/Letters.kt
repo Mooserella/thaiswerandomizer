@@ -56,5 +56,9 @@ object Letters {
     Letter("c42", "ฮ", "นกฮูก", "hor nók-hûuk", "uggla", "h / -", "lågklass"),
     )
 
-    fun byId(id: String?): Letter? = ALL.firstOrNull { it.id == id }
+    fun byId(id: String?): Letter? =
+        ALL.firstOrNull { it.id == id } ?: Vowels.ALL.firstOrNull { it.id == id }
+
+    /** All letters of a category: "c" for consonants, "v" for vowels. */
+    fun of(cat: String): List<Letter> = if (cat == "v") Vowels.ALL else ALL
 }

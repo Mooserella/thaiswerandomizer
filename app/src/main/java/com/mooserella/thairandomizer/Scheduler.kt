@@ -35,13 +35,12 @@ object Scheduler {
 
         if (!Prefs.enabled(ctx)) return null
 
-        val sv = Prefs.mode(ctx) == "sv"
-        val thaiPool = Letters.ALL.filter { it.id in Prefs.pool(ctx) }
-        val svPool = Swedish.ALL.filter { it.id in Prefs.svPool(ctx) }
-        if ((if (sv) svPool.size else thaiPool.size) == 0) return null
+        val cat = Prefs.cat(ctx)
+        val pool = Letters.of(cat).filter { it.id in Prefs.pool(ctx, cat) }
+        if (pool.isEmpty()) return null
         val level = Prefs.dimLevel(ctx)
-        val dimThai = Prefs.dim(ctx)
-        val dimSv = Prefs.svDim(ctx)
+        val dim = Prefs.dim(ctx, cat)
+        val reverse = Prefs.reverse(ctx)
 
         val start = Prefs.startHour(ctx)
         val end = Prefs.endHour(ctx)
@@ -57,19 +56,17 @@ object Scheduler {
         var next: Pair<Long, String>? = null
         for (d in 0 until DAYS) {
             val date = today.plusDays(d.toLong())
-            val seed = date.toEpochDay() * 100003L + per * 7919L + start * 31L + end + (if (sv) 1L else 0L)
+            val seed = date.toEpochDay() * 100003L + per * 7919L + start * 31L + end + (if (cat == "v") 1L else 0L)
             val rnd = Random(seed)
             for (i in 0 until per) {
                 val minute = start * 60 + i * segment + rnd.nextInt(segment)
                 // Always draw, even for times that have passed, so the rest of the day stays the same.
-                val svLetter = if (sv) Weighted.pick(svPool, { it.id in dimSv }, level, rnd) else null
-                val thLetter = if (sv) null else Weighted.pick(thaiPool, { it.id in dimThai }, level, rnd)
+                val letter = Weighted.pick(pool, { it.id in dim }, level, rnd)
                 val at = date.atStartOfDay(zone).plusMinutes(minute.toLong()).toInstant().toEpochMilli()
                 if (at <= now) continue
 
-                val label = svLetter?.glyph ?: thLetter!!.glyph
-                val intent = Intent(ctx, AlarmReceiver::class.java)
-                if (svLetter != null) intent.putExtra("sv", svLetter.id) else intent.putExtra("letter", thLetter!!.id)
+                val label = Notifier.title(letter, reverse)
+                val intent = Intent(ctx, AlarmReceiver::class.java).putExtra("letter", letter.id)
                 val pi = PendingIntent.getBroadcast(
                     ctx, d * MAX_PER_DAY + i, intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

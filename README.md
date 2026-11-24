@@ -1,12 +1,10 @@
 # Camla
 
-Android-app som skickar en slumpad bokstav som notis vid slumpade tider, så att du kan försöka komma på vad den heter innan du öppnar appen.
+Android-app som skickar en slumpad thailändsk bokstav som notis vid slumpade tider, så att du kan försöka komma på vad den heter innan du öppnar appen.
 
-- **Thailändskt läge** (🇹🇭): thailändska konsonanter, för att lära sig det thailändska alfabetet.
-- **Svenskt läge** (🇸🇪): svenska alfabetet A–Ö, för att lära sig svenska bokstäver.
+- **Konsonanter** (42) och **Vokaler** (28) väljs med flikarna uppe till höger. Varje sorts har ett eget urval och egna dämpade bokstäver, som finns kvar när du växlar.
+- **Omvänt läge:** i stället för bokstaven visas vad ordet betyder (t.ex. "Kedja"). Försök komma på och rita bokstaven, tryck sedan Visa svar för att höra den och se hur den ser ut. Gäller även notiserna.
 
-Välj språk med flaggorna uppe till höger. Varje språk har ett eget urval av bokstäver. Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Reglaget "Dämpade bokstäver" styr hur ofta de dämpade bokstäverna kommer upp. I inställningarna väljer du tidsfönster och antal notiser per dag.
-
-Notisen visar bara bokstaven. Tryck på den för att öppna appen, visa svaret och höra det.
+Tryck en gång på en bokstav för att lägga till den, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Reglaget "Dämpade bokstäver" styr hur ofta de dämpade kommer upp. Där väljer du också tidsfönster och antal notiser per dag.
 
 Bygget görs av GitHub Actions och publiceras under Releases › Latest build.

@@ -7,15 +7,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 
-/** Notifications only show the letter itself, so you have to recall the answer. */
+/** Notifications only show the letter (or, in reverse mode, what its word means), so you have to recall the answer. */
 object Notifier {
     private const val CHANNEL = "letters"
 
-    fun showThai(ctx: Context, letter: Letter) = post(ctx, letter.glyph) { putExtra("letter", letter.id) }
+    fun title(letter: Letter, reverse: Boolean) =
+        if (reverse) letter.meaning.replaceFirstChar { it.uppercase() } else letter.glyph
 
-    fun showSwedish(ctx: Context, letter: SvLetter) = post(ctx, letter.glyph) { putExtra("sv", letter.id) }
-
-    private fun post(ctx: Context, title: String, extras: Intent.() -> Unit) {
+    fun show(ctx: Context, letter: Letter, reverse: Boolean) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(
@@ -25,7 +24,7 @@ object Notifier {
 
         val open = Intent(ctx, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            .apply(extras)
+            .putExtra("letter", letter.id)
         val id = (System.currentTimeMillis() / 1000).toInt()
         val tap = PendingIntent.getActivity(
             ctx, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -33,7 +32,7 @@ object Notifier {
 
         val n = Notification.Builder(ctx, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
-            .setContentTitle(title)
+            .setContentTitle(title(letter, reverse))
             .setContentIntent(tap)
             .setAutoCancel(true)
             .build()
