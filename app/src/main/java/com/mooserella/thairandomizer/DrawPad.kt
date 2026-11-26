@@ -20,6 +20,13 @@ class DrawPad(ctx: Context, private val bgColor: Int) : View(ctx) {
         strokeJoin = Paint.Join.ROUND
     }
 
+    override fun onMeasure(w: Int, h: Int) {
+        val width = MeasureSpec.getSize(w)
+        val height = if (MeasureSpec.getMode(h) == MeasureSpec.UNSPECIFIED) minimumHeight
+        else maxOf(MeasureSpec.getSize(h), minimumHeight)
+        setMeasuredDimension(width, height)
+    }
+
     fun clear() {
         strokes.clear()
         current = null

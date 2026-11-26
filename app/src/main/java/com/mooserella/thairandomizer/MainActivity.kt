@@ -151,9 +151,19 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_HORIZONTAL
             visibility = View.GONE
         }
-        padBox.addView(pad, LinearLayout.LayoutParams(dp(150), dp(150)))
-        padBox.addView(button("Rensa") { pad.clear() }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(4) })
-        cardBox.addView(padBox, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(12) })
+        pad.minimumHeight = dp(130)
+        padBox.addView(pad, LinearLayout.LayoutParams(dp(110), 0, 1f))
+        padBox.addView(Button(this).apply {
+            text = "Rensa"
+            textSize = 12f
+            isAllCaps = false
+            minHeight = 0
+            minimumHeight = dp(36)
+            setTextColor(Color.WHITE)
+            setBackgroundColor(accent)
+            setOnClickListener { pad.clear() }
+        }, LinearLayout.LayoutParams(dp(110), -2).apply { topMargin = dp(4) })
+        cardBox.addView(padBox, LinearLayout.LayoutParams(-2, -1).apply { leftMargin = dp(12) })
         col.addView(cardBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val rev = Switch(this).apply {
