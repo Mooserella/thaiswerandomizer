@@ -52,6 +52,8 @@ class MainActivity : Activity() {
     private lateinit var mainBtn: Button
     private lateinit var poolTitle: TextView
     private lateinit var statusView: TextView
+    private lateinit var pad: DrawPad
+    private lateinit var padBox: LinearLayout
     private lateinit var tabC: Button
     private lateinit var tabV: Button
     private lateinit var grid: GridLayout
@@ -113,10 +115,13 @@ class MainActivity : Activity() {
 
         // Letter card
         val cardBox = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
+            orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(card)
             setPadding(dp(16), dp(16), dp(16), dp(16))
+        }
+        val leftBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
         }
         promptView = text("", 88f).apply { gravity = Gravity.CENTER }
         hintView = text("", 14f, muted).apply { gravity = Gravity.CENTER }
@@ -133,10 +138,22 @@ class MainActivity : Activity() {
                 next()
             }
         }
-        cardBox.addView(promptView)
-        cardBox.addView(hintView)
-        cardBox.addView(revealBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        cardBox.addView(mainBtn, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+        leftBox.addView(promptView)
+        leftBox.addView(hintView)
+        leftBox.addView(revealBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        leftBox.addView(mainBtn, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+        cardBox.addView(leftBox, LinearLayout.LayoutParams(0, -2, 1f))
+
+        // Drawing field on the right, only in reverse mode
+        pad = DrawPad(this, off)
+        padBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            visibility = View.GONE
+        }
+        padBox.addView(pad, LinearLayout.LayoutParams(dp(150), dp(150)))
+        padBox.addView(button("Rensa") { pad.clear() }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(4) })
+        cardBox.addView(padBox, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(12) })
         col.addView(cardBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val rev = Switch(this).apply {
@@ -145,22 +162,34 @@ class MainActivity : Activity() {
             isChecked = Prefs.reverse(this@MainActivity)
             setOnCheckedChangeListener { _, on ->
                 Prefs.setReverse(this@MainActivity, on)
+                pad.clear()
                 next()
                 applyAndSave()
             }
         }
-        col.addView(rev, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
-        col.addView(
-            text("Du ser ordets betydelse (t.ex. Kedja) och försöker komma på och rita bokstaven. Visa svar läser upp den och visar hur den ser ut. Gäller även notiserna.", 12f, muted)
-        )
+        val revRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        revRow.addView(rev, LinearLayout.LayoutParams(0, -2, 1f))
+        revRow.addView(infoButton(
+            "Omvänt läge",
+            "Du ser ordets betydelse (t.ex. Kedja) och försöker komma på och rita bokstaven i fältet till höger. Visa svar läser upp bokstaven och visar hur den ser ut, så att du kan jämföra. Gäller även notiserna."
+        ))
+        col.addView(revRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
 
         // Pool
         poolTitle = text("", 13f, muted, true)
-        col.addView(poolTitle, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(24) })
-        col.addView(text(
-            "Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Håll in för att se svaret.",
-            13f, muted
+        val poolRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        poolRow.addView(poolTitle, LinearLayout.LayoutParams(0, -2, 1f))
+        poolRow.addView(infoButton(
+            "Urval",
+            "Tryck en gång för att lägga till en bokstav, en gång till för att dämpa den (den kommer då upp mer sällan) och en tredje gång för att ta bort den. Håll in för att se svaret."
         ))
+        col.addView(poolRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(24) })
 
         grid = GridLayout(this)
         col.addView(grid, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
@@ -258,6 +287,18 @@ class MainActivity : Activity() {
         next()
         handleIntent(intent)
         applyAndSave()
+    }
+
+    /** A small i that opens an explanation, so the texts do not take space on the screen. */
+    private fun infoButton(title: String, message: String) = text("ⓘ", 22f, muted).apply {
+        setPadding(dp(12), dp(4), dp(4), dp(4))
+        setOnClickListener {
+            android.app.AlertDialog.Builder(this@MainActivity)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show()
+        }
     }
 
     private fun spinner(label: String, items: List<String>, selected: Int, onPick: (Int) -> Unit): View {
@@ -361,11 +402,13 @@ class MainActivity : Activity() {
         if (c.isEmpty()) {
             cur = Letters.of(cat).first()
             revealed = false
+            pad.clear()
             renderCard()
             return
         }
         cur = Weighted.pick(c, { it.id in activeDim() }, Prefs.dimLevel(this), Random)
         revealed = false
+        pad.clear()
         renderCard()
     }
 
@@ -375,8 +418,9 @@ class MainActivity : Activity() {
         tabC.alpha = if (vowel) 0.4f else 1f
         tabV.alpha = if (vowel) 1f else 0.4f
 
+        padBox.visibility = if (reverse) View.VISIBLE else View.GONE
         if (reverse) {
-            promptView.textSize = 40f
+            promptView.textSize = 28f
             promptView.text = cur.meaning.replaceFirstChar { it.uppercase() }
             hintView.text = if (vowel) "Vilken vokal är det i ordet? Försök rita den." else "Vilken bokstav hör ordet till? Försök rita den."
         } else {
@@ -393,19 +437,19 @@ class MainActivity : Activity() {
         mainBtn.text = "Nästa"
 
         val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = if (reverse) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
         row.addView(button(if (vowel) "▶ Vokal" else "▶ Bokstav") { playCurrent(false) })
-        row.addView(View(this), LinearLayout.LayoutParams(dp(12), 1))
+        row.addView(View(this), if (reverse) LinearLayout.LayoutParams(1, dp(8)) else LinearLayout.LayoutParams(dp(12), 1))
         row.addView(button("▶ Ord") { playCurrent(true) })
 
         if (reverse) {
             revealBox.addView(text(cur.glyph, 88f).apply { gravity = Gravity.CENTER })
         }
-        revealBox.addView(text("${cur.roman}  (${cur.meaning})", 20f, fg, true).apply { gravity = Gravity.CENTER })
+        revealBox.addView(text("${cur.roman}  (${cur.meaning})", if (reverse) 16f else 20f, fg, true).apply { gravity = Gravity.CENTER })
         revealBox.addView(
-            text("ljud: ${cur.sound} · ${cur.cls}\n${cur.word}", 15f, muted).apply { gravity = Gravity.CENTER }
+            text("ljud: ${cur.sound} · ${cur.cls}\n${cur.word}", if (reverse) 13f else 15f, muted).apply { gravity = Gravity.CENTER }
         )
         revealBox.addView(row, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
     }
