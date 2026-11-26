@@ -115,7 +115,7 @@ class MainActivity : Activity() {
 
         // Letter card
         val cardBox = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = LinearLayout.VERTICAL
             setBackgroundColor(card)
             setPadding(dp(16), dp(16), dp(16), dp(16))
         }
@@ -142,7 +142,7 @@ class MainActivity : Activity() {
         leftBox.addView(hintView)
         leftBox.addView(revealBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         leftBox.addView(mainBtn, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
-        cardBox.addView(leftBox, LinearLayout.LayoutParams(0, -2, 1f))
+        cardBox.addView(leftBox, LinearLayout.LayoutParams(-1, -2))
 
         // Drawing field on the right, only in reverse mode
         pad = DrawPad(this, off)
@@ -151,8 +151,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_HORIZONTAL
             visibility = View.GONE
         }
-        pad.minimumHeight = dp(130)
-        padBox.addView(pad, LinearLayout.LayoutParams(dp(110), 0, 1f))
+        padBox.addView(pad, LinearLayout.LayoutParams(-1, dp(240)))
         padBox.addView(Button(this).apply {
             text = "Rensa"
             textSize = 12f
@@ -162,8 +161,8 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             setBackgroundColor(accent)
             setOnClickListener { pad.clear() }
-        }, LinearLayout.LayoutParams(dp(110), -2).apply { topMargin = dp(4) })
-        cardBox.addView(padBox, LinearLayout.LayoutParams(-2, -1).apply { leftMargin = dp(12) })
+        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(4) })
+        cardBox.addView(padBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         col.addView(cardBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val rev = Switch(this).apply {
@@ -430,7 +429,7 @@ class MainActivity : Activity() {
 
         padBox.visibility = if (reverse) View.VISIBLE else View.GONE
         if (reverse) {
-            promptView.textSize = 28f
+            promptView.textSize = 40f
             promptView.text = cur.meaning.replaceFirstChar { it.uppercase() }
             hintView.text = if (vowel) "Vilken vokal är det i ordet? Försök rita den." else "Vilken bokstav hör ordet till? Försök rita den."
         } else {
@@ -447,19 +446,19 @@ class MainActivity : Activity() {
         mainBtn.text = "Nästa"
 
         val row = LinearLayout(this).apply {
-            orientation = if (reverse) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
         row.addView(button(if (vowel) "▶ Vokal" else "▶ Bokstav") { playCurrent(false) })
-        row.addView(View(this), if (reverse) LinearLayout.LayoutParams(1, dp(8)) else LinearLayout.LayoutParams(dp(12), 1))
+        row.addView(View(this), LinearLayout.LayoutParams(dp(12), 1))
         row.addView(button("▶ Ord") { playCurrent(true) })
 
         if (reverse) {
             revealBox.addView(text(cur.glyph, 88f).apply { gravity = Gravity.CENTER })
         }
-        revealBox.addView(text("${cur.roman}  (${cur.meaning})", if (reverse) 16f else 20f, fg, true).apply { gravity = Gravity.CENTER })
+        revealBox.addView(text("${cur.roman}  (${cur.meaning})", 20f, fg, true).apply { gravity = Gravity.CENTER })
         revealBox.addView(
-            text("ljud: ${cur.sound} · ${cur.cls}\n${cur.word}", if (reverse) 13f else 15f, muted).apply { gravity = Gravity.CENTER }
+            text("ljud: ${cur.sound} · ${cur.cls}\n${cur.word}", 15f, muted).apply { gravity = Gravity.CENTER }
         )
         revealBox.addView(row, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
     }
